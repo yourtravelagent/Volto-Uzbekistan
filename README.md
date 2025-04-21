@@ -1,2 +1,0 @@
-# Volto-Uzbekistan
-
