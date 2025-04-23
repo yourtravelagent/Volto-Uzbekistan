@@ -1,84 +1,122 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <title>Магазин Volto</title>
-</head>
-<body>
-    <h1>Добро пожаловать в магазин Volto!</h1>
-    <div id="catalog"></div> 
-
-    <script src="https://apis.google.com/js/api.js"></script>
-    <script>
-        const API_KEY = 'AIzaSyD2WK0Ir5cNLKBzukwTN9ZIfgrBoDBxZN0'; // AIzaSyD2WK0Ir5cNLKBzukwTN9ZIfgrBoDBxZN0
-        const SPREADSHEET_ID = '17TfDarzGc3dPJL_aAXfqF9WU2p9jO6gyyyrD1Se_3Ig'; // ID таблицы
-        const RANGE = 'Sheet1!A2:D'; // Диапазон 
-
-        function loadData() {
-            gapi.client.init({
-                apiKey: API_KEY,
-            }).then(() => {
-                gapi.client.request({
-                    path: `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${RANGE}`,
-                }).then((response) => {
-                    const data = response.result.values;
-                    console.log(data); // Печать данных в консоль
-                    displayProducts(data);
-                }).catch((error) => {
-                    console.error("Error loading data: ", error);
-                });
-            });
-        } 
-
-        function displayProducts(products) {
-            const catalogElement = document.getElementById('catalog');
-            if (products.length > 0) {
-                const productElement = document.createElement('div');
-                productElement.innerHTML = `<p><strong>${products[0][0]}</strong><br>Цена: ${products[0][1]}<br>${products[0][2]}<br>${products[0][3]}</p>`;
-                catalogElement.appendChild(productElement);
-            } else {
-                const productElement = document.createElement('div');
-                productElement.innerHTML = `<p>Нет данных для отображения.</p>`;
-                catalogElement.appendChild(productElement);
-            }
-        } 
-
-        gapi.load('client', loadData);
-    </script>
-</body>
-</html>
-<!DOCTYPE html>
-<html lang="ru">
-<head>
   <meta charset="UTF-8">
   <title>Магазин Volto</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-    }
-    .product {
-      border: 1px solid #ccc;
-      padding: 10px;
-      margin-bottom: 10px;
-      border-radius: 10px;
-    }
+    body { font-family: Arial; padding: 20px; }
+    .product { border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; border-radius: 10px; }
+    .cart { margin-top: 30px; border-top: 2px solid #000; padding-top: 10px; }
+    .form-group { margin-bottom: 10px; }
+    input, button { padding: 8px; margin-top: 5px; }
   </style>
 </head>
 <body>
   <h1>Добро пожаловать в магазин Volto!</h1>
   <div id="catalog">Загрузка товаров...</div>
 
+  <div class="cart">
+    <h2>Корзина</h2>
+    <ul id="cart-list"></ul>
+
+    <!-- Форма для ввода данных пользователя -->
+    <div class="form-group">
+      <label for="name">Ваше имя:</label>
+      <input type="text" id="name" placeholder="Введите имя" required />
+    </div>
+    <div class="form-group">
+      <label for="phone">Ваш номер телефона:</label>
+      <input type="text" id="phone" placeholder="Введите номер телефона" required />
+    </div>
+
+    <button onclick="sendOrder()">Оформить заказ</button>
+  </div>
+
   <script>
+    const cart = [];
+    const TELEGRAM_TOKEN = '8138755156:AAHiYKUypTD2jZ3Ki7dAkGrVQ1jfAvPh7u0';
+    const CHAT_ID = '1144369520';
+
+    function addToCart(product) {
+      cart.push(product);
+      updateCartUI();
+    }
+
+    function updateCartUI() {
+      const cartList = document.getElementById('cart-list');
+      cartList.innerHTML = '';
+      cart.forEach((item, index) => {
+        const li = document.createElement('li');
+        li.textContent = `${item.name} - ${item.price}`;
+        cartList.appendChild(li);
+      });
+    }
+
+    function sendOrder() {
+      if (cart.length === 0) {
+        alert("Корзина пуста!");
+        return;
+      }
+
+      const name = document.getElementById('name').value.trim();
+      const phone = document.getElementById('phone').value.trim();
+
+      if (!name || !phone) {
+        alert("Пожалуйста, укажите имя и номер телефона.");
+        return;
+      }
+
+      const orderText = cart.map((item, i) => `${i + 1}) ${item.name} - ${item.price}`).join('\n');
+      const message = `Новый заказ от ${name} (телефон: ${phone}):\n${orderText}`;
+
+      fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: CHAT_ID,
+          text: message
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.ok) {
+          alert("Заказ отправлен!");
+          cart.length = 0;
+          updateCartUI();
+          document.getElementById('name').value = '';
+          document.getElementById('phone').value = '';
+        } else {
+          alert("Ошибка отправки заказа.");
+          console.error(data);
+        }
+      })
+      .catch(err => {
+        alert("Ошибка подключения к Telegram");
+        console.error(err);
+      });
+    }
+
     fetch('https://script.google.com/macros/s/AKfycbz3S7zCTHWKriVP5aSDcbRMNa6QSKRp5UQmy1p8GrkDSWFI0EHJmzVr-k3M24aN_pDrxg/exec')
       .then(res => res.json())
       .then(data => {
         const catalog = document.getElementById('catalog');
         catalog.innerHTML = '';
+
         data.forEach(item => {
+          const name = item[0] || 'Без названия';
+          const price = item[1] || 'Не указана';
+          const description = item[2] || '';
+          const image = item[3] || '';
+
           const div = document.createElement('div');
           div.className = 'product';
-          div.innerHTML = `<strong>${item[0]}</strong><br>Цена: ${item[1]}<br>${item[2]}<br>${item[3]}`;
+          div.innerHTML = `
+            <strong>${name}</strong><br>
+            Цена: ${price}<br>
+            ${description}<br>
+            ${image ? `<img src="${image}" alt="${name}" width="150"><br>` : ''}
+            <button onclick='addToCart(${JSON.stringify({ name, price })})'>Добавить в корзину</button>
+          `;
           catalog.appendChild(div);
         });
       })
