@@ -1,56 +1,49 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <title>Магазин Volto</title>
+    <meta charset="UTF-8">
+    <title>Магазин Volto</title>
 </head>
 <body>
-  <h1>Добро пожаловать в магазин Volto!</h1>
-  <p>Это Telegram WebApp.</p>
-</body>
-</html>
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <title>Магазин Volto</title>
-</head>
-<body>
-    <h1>Добро пожаловать в магазин Volto!</h1>
-    <div id="catalog"></div>
+    <h1>Добро пожаловать в магазин Volto!</h1>
+    <div id="catalog"></div> 
 
-    <script src="https://apis.google.com/js/api.js"></script>
-    <script>
-        const API_KEY = 'AIzaSyD2WK0Ir5cNLKBzukwTN9ZIfgrBoDBxZN0'; // Убедись, что ключ в кавычках
-        const SPREADSHEET_ID = '17TfDarzGc3dPJL_aAXfqF9WU2p9jO6gyyyrD1Se_3Ig'; // ID твоей таблицы
-        const RANGE = 'Sheet1!A2:D'; // Диапазон данных (поменяй, если нужно)
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script>
+        const API_KEY = 'AIzaSyD2WK0Ir5cNLKBzukwTN9ZIfgrBoDBxZN0'; // AIzaSyD2WK0Ir5cNLKBzukwTN9ZIfgrBoDBxZN0
+        const SPREADSHEET_ID = '17TfDarzGc3dPJL_aAXfqF9WU2p9jO6gyyyrD1Se_3Ig'; // ID таблицы
+        const RANGE = 'Sheet1!A2:D'; // Диапазон 
 
-        function loadData() {
-            gapi.client.init({
-                apiKey: API_KEY,
-            }).then(() => {
-                gapi.client.request({
-                    path: `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${RANGE}`,
-                }).then((response) => {
-                    const data = response.result.values;
-                    console.log(data); // Для отладки, чтобы увидеть данные
-                    displayProducts(data);
-                }).catch((error) => {
-                    console.error("Error loading data: ", error);
-                });
-            });
-        }
+        function loadData() {
+            gapi.client.init({
+                apiKey: API_KEY,
+            }).then(() => {
+                gapi.client.request({
+                    path: `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${RANGE}`,
+                }).then((response) => {
+                    const data = response.result.values;
+                    console.log(data); // Печать данных в консоль
+                    displayProducts(data);
+                }).catch((error) => {
+                    console.error("Error loading data: ", error);
+                });
+            });
+        } 
 
-        function displayProducts(products) {
-            const catalogElement = document.getElementById('catalog');
-            products.forEach(product => {
-                const productElement = document.createElement('div');
-                productElement.innerHTML = `<p><strong>${product[0]}</strong><br>Цена: ${product[1]}<br>${product[2]}<br>${product[3]}</p>`;
-                catalogElement.appendChild(productElement);
-            });
-        }
+        function displayProducts(products) {
+            const catalogElement = document.getElementById('catalog');
+            if (products.length > 0) {
+                const productElement = document.createElement('div');
+                productElement.innerHTML = `<p><strong>${products[0][0]}</strong><br>Цена: ${products[0][1]}<br>${products[0][2]}<br>${products[0][3]}</p>`;
+                catalogElement.appendChild(productElement);
+            } else {
+                const productElement = document.createElement('div');
+                productElement.innerHTML = `<p>Нет данных для отображения.</p>`;
+                catalogElement.appendChild(productElement);
+            }
+        } 
 
-        gapi.load('client', loadData);
-    </script>
+        gapi.load('client', loadData);
+    </script>
 </body>
 </html>
